@@ -195,14 +195,11 @@
 </head>
 <body>
 
-    <!-- Tag Audio: Autoplay dan Muted agar bisa jalan otomatis di semua browser -->
-    <!-- Ganti 'URL_MUSIK_ANDA.mp3' dengan URL file musik MP3 yang valid. -->
     <audio id="background-music" autoplay loop muted>
         <source src="solawat.mp3" type="audio/mpeg">
         Browser Anda tidak mendukung elemen audio.
     </audio>
 
-    <!-- Tombol Unmute -->
     <button id="music-toggle" onclick="toggleMusic()">🔇</button>
 
     <div class="box" id="gallery-box">
@@ -248,7 +245,7 @@
         }, { once: true });
 
 
-        // --- LOGIKA SLIDE TOUCH BARU ---
+        // --- LOGIKA SLIDE TOUCH/MOUSE BARU ---
         const gallery = document.getElementById('gallery-box');
         let startX;
         let currentRotation = 0;
@@ -266,12 +263,11 @@
         function startInertia() {
             animationInterval = setInterval(() => {
                 currentRotation += velocity;
-                // Batasi kecepatan inersia agar tidak terlalu cepat
-                velocity *= 0.95; // Perlambatan (friction)
+                // Perlambatan (friction)
+                velocity *= 0.95; 
                 if (Math.abs(velocity) < 0.1) {
                     clearInterval(animationInterval);
-                    // Setelah inersia berhenti, kita bisa putuskan apakah mau melanjutkan animasi CSS atau tidak
-                    // Untuk saat ini, biarkan paused sampai user interaksi lagi
+                    // Biarkan paused setelah inersia selesai
                 }
                 updateRotation();
             }, 10);
@@ -282,7 +278,7 @@
             gallery.style.transform = `perspective(1000px) rotateY(${currentRotation}deg)`;
         }
 
-        // --- Event Listeners untuk Sentuhan ---
+        // --- Event Listeners untuk Sentuhan (Touch) ---
 
         gallery.addEventListener('touchstart', (e) => {
             pauseAnimation(); // Hentikan animasi CSS
@@ -297,7 +293,6 @@
             const deltaX = currentX - startX;
             
             // Hitung perubahan rotasi
-            // DeltaX dibagi dengan sensitivitas untuk mengontrol seberapa cepat berputar
             const rotationDelta = deltaX * sensitivity; 
             currentRotation += rotationDelta;
 
@@ -314,7 +309,8 @@
             startInertia();
         }, false);
 
-        // Juga tambahkan event mouse untuk interaksi desktop yang sama
+        // --- Event Listeners untuk Mouse Drag ---
+        
         gallery.addEventListener('mousedown', (e) => {
             pauseAnimation();
             startX = e.clientX;
