@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Rotating Image Gallery Responsive Gradient Zoom Slide (Dengan Touch Slide)</title>
+    <style>
+        /* CSS Umum */
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(150deg, rgb(214, 240, 68), rgb(47, 147, 218));
+            flex-direction: column; 
+            padding-top: 20px;
+            padding-bottom: 80px; /* Ruang untuk tombol fixed di bawah */
+            /* Menghentikan overscroll pada mobile agar efek slide bekerja lebih baik */
+            overflow: hidden; 
+        }
+
+        .box {
+            position: relative;
+            /* Ukuran default untuk komputer: 200x300px */
+            width: 200px;
+            height: 300px; 
+            transform-style: preserve-3d;
+            animation: animate 20s linear infinite; /* Animasi default 20 detik */
+            max-width: 90vw; 
+            /* Menambahkan transisi untuk pergerakan sentuhan yang halus */
+            transition: transform 0.1s linear; 
+        }
+
+        .box:hover {
+            animation-play-state: paused;
+        }
+
+        /* Class baru untuk menghentikan animasi via JS saat disentuh */
+        .box.paused {
+            animation-play-state: paused;
+            /* Menghapus transisi saat paused agar pergerakan sentuhan langsung responsif */
+            transition: none;
+        }
+
+        @keyframes animate {
+            0% {
+                transform: perspective(1000px) rotateY(0deg);
+            }
+            100% {
+                transform: perspective(1000px) rotateY(360deg);
+            }
+        }
+
+        /* --- ANIMASI GRADIENT BOX SHADOW --- */
+        @keyframes gradientShadow {
+            0% {
+                box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.7); /* Merah */
+            }
+            33% {
+                box-shadow: 0 0 15px 5px rgba(0, 255, 0, 0.7); /* Hijau */
+            }
+            66% {
+                box-shadow: 0 0 15px 5px rgba(0, 0, 255, 0.7); /* Biru */
+            }
+            100% {
+                box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.7); /* Kembali Merah */
+            }
+        }
+
+        .box span {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform-origin: center;
+            transform-style: preserve-3d;
+            transform: rotateY(calc(var(--i) * 36deg)) translateZ(450px); 
+            -webkit-box-reflect: below 2px linear-gradient(transparent, transparent, rgba(4, 4, 4, 0.267));
+        }
+
+        .box span img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: 0.5s ease; /* Transisi yang lebih halus untuk zoom */
+            border-radius: 15px;
+            object-fit: cover; 
+            border: 4px solid transparent;
+            border-image: linear-gradient(to right, red, blue, green) 1;
+            /* Terapkan animasi shadow di sini */
+            animation: gradientShadow 3s infinite alternate; 
+            /* Properti CSS untuk performa sentuhan yang lebih baik di mobile */
+            touch-action: pan-y; 
+        }
+
+        /* --- EFEK ZOOM SAAT HOVER/FOCUS --- */
+        .box span img:hover,
+        .box span img:focus-within { /* Menambahkan focus-within untuk akses keyboard */
+            transform: scale(1.1) translateY(-2px); /* Zoom 110% dan sedikit naik */
+            /* Matikan animasi shadow saat dihover untuk kontrol manual */
+            animation-play-state: paused; 
+            box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.8), 
+                        0 0 50px 20px rgba(0, 255, 255, 0.7); /* Bayangan putih/cyan terang saat di-hover */
+        }
+
+        /* --- STYLING TOMBOL BAWAH (GRADIENT BACKGROUND) --- */
+        .button-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            box-sizing: border-box;
+            gap: 10px;
+        }
+
+        .nav-button-bottom {
+            flex-grow: 1;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 8px;
+            text-align: center;
+            font-family: sans-serif;
+            font-weight: bold;
+            transition: transform 0.3s, box-shadow 0.3s;
+            font-size: 0.9rem;
+            max-width: 150px;
+            
+            /* Latar belakang tombol FULL gradient Biru ke Merah */
+            background: linear-gradient(90deg, rgb(47, 147, 218), rgb(255, 0, 0));
+            color: #fff; /* Warna teks putih agar kontras */
+            box-shadow: 0 0 15px 5px rgba(255, 0, 0, 0.5); /* Bayangan merah */
+        }
+
+        .nav-button-bottom:hover {
+            transform: translateY(-3px);
+            /* Bayangan hover yang lebih kuat (biru) */
+            box-shadow: 0 5px 20px rgba(47, 147, 218, 1);
+        }
+
+        /* CSS untuk Tombol Musik */
+        #music-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex; /* Tampilkan tombol ini secara default */
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        /* --- MEDIA QUERY: VERSI MOBILE (Layar kurang dari 600px) --- */
+        @media screen and (max-width: 600px) {
+            .box {
+                width: 95px;
+                height: 200px;
+            }
+
+            .box span {
+                transform: rotateY(calc(var(--i) * 36deg)) translateZ(180px); 
+            }
+
+            .box span img {
+                border-radius: 5px;
+                border: 2px solid transparent; 
+                border-image: linear-gradient(to right, red, blue, green) 1;
+            }
+            
+            .nav-button-bottom {
+                font-size: 0.75rem; 
+                max-width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Tag Audio: Autoplay dan Muted agar bisa jalan otomatis di semua browser -->
+    <!-- Ganti 'URL_MUSIK_ANDA.mp3' dengan URL file musik MP3 yang valid. -->
+    <audio id="background-music" autoplay loop muted>
+        <source src="solawat.mp3" type="audio/mpeg">
+        Browser Anda tidak mendukung elemen audio.
+    </audio>
+
+    <!-- Tombol Unmute -->
+    <button id="music-toggle" onclick="toggleMusic()">🔇</button>
+
+    <div class="box" id="gallery-box">
+        <span style="--i:1"><img src="https://png.pngtree.com/background/20250109/original/pngtree-cartoon-kids-walking-wallpaper-picture-image_15160714.jpg" alt="Gallery Image 1" tabindex="0"></span>
+        <span style="--i:2"><img src="https://img.freepik.com/foto-gratis/karakter-kartun-3d_23-2151021986.jpg?semt=ais_hybrid&w=740&q=80" alt="Gallery Image 2" tabindex="0"></span>
+        <span style="--i:3"><img src="https://i.pinimg.com/474x/21/35/f0/2135f0dd652c5487bc129558e9d3dada.jpg" alt="Gallery Image 3" tabindex="0"></span>
+        <span style="--i:4"><img src="https://azimages.org/wp-content/uploads/2024/10/Cute-Cartoon-Boy-DP15.jpg" alt="Gallery Image 4" tabindex="0"></span>
+        <span style="--i:5"><img src="https://sadgirldp.com/wp-content/uploads/Cartoon-Boy-DP-Images.jpeg" alt="Gallery Image 5" tabindex="0"></span>
+        <span style="--i:6"><img src="https://azimages.org/wp-content/uploads/2024/10/Cute-Cartoon-Boy-DP17.jpg" alt="Gallery Image 6" tabindex="0"></span>
+        <span style="--i:7"><img src="https://azimages.org/wp-content/uploads/2024/10/Cute-Cartoon-Boy-DP16.jpg" alt="Gallery Image 7" tabindex="0"></span>
+        <span style="--i:8"><img src="https://mewingemoji.com/wp-content/uploads/2024/07/cute-cartoon-dp15-573x1024.jpg" alt="Gallery Image 8" tabindex="0"></span>
+        <span style="--i:9"><img src="https://mewingemoji.com/wp-content/uploads/2024/07/cute-cartoon-dp.jpg" alt="Gallery Image 9" tabindex="0"></span>
+        <span style="--i:10"><img src="https://photosdp.com/wp-content/uploads/2024/04/Cartoon-Girl-Dp-PhotosDp.Com_24.jpg" alt="Gallery Image 10" tabindex="0"></span>
+    </div>
+
+    <div class="button-container">
+        <a href="https://example.com" class="nav-button-bottom">Link 1</a>
+        <a href="https://example.com" class="nav-button-bottom">Link 2</a>
+        <a href="https://example.com" class="nav-button-bottom">Link 3</a>
+    </div>
+
+    <script>
+        // --- LOGIKA MUSIK BAWAAN ---
+        function toggleMusic() {
+            var music = document.getElementById('background-music');
+            var toggleButton = document.getElementById('music-toggle');
+            if (music.muted) {
+                music.muted = false;
+                toggleButton.textContent = '🔊';
+            } else {
+                music.muted = true;
+                toggleButton.textContent = '🔇';
+            }
+        }
+
+        // Pastikan musik otomatis diputar saat interaksi pertama (kebijakan browser)
+        document.body.addEventListener('click', () => {
+            const music = document.getElementById('background-music');
+            if (music.muted) {
+                music.muted = false;
+                document.getElementById('music-toggle').textContent = '🔊';
+            }
+        }, { once: true });
+
+
+        // --- LOGIKA SLIDE TOUCH BARU ---
+        const gallery = document.getElementById('gallery-box');
+        let startX;
+        let currentRotation = 0;
+        let velocity = 0;
+        let animationInterval;
+        const sensitivity = 0.5; // Sesuaikan sensitivitas geser
+
+        // Fungsi untuk menghentikan animasi CSS saat disentuh
+        function pauseAnimation() {
+            gallery.classList.add('paused');
+            if (animationInterval) clearInterval(animationInterval);
+        }
+
+        // Fungsi untuk memulai animasi inersia (momentum)
+        function startInertia() {
+            animationInterval = setInterval(() => {
+                currentRotation += velocity;
+                // Batasi kecepatan inersia agar tidak terlalu cepat
+                velocity *= 0.95; // Perlambatan (friction)
+                if (Math.abs(velocity) < 0.1) {
+                    clearInterval(animationInterval);
+                    // Setelah inersia berhenti, kita bisa putuskan apakah mau melanjutkan animasi CSS atau tidak
+                    // Untuk saat ini, biarkan paused sampai user interaksi lagi
+                }
+                updateRotation();
+            }, 10);
+        }
+
+        function updateRotation() {
+            // Mengatur rotasi Y pada elemen galeri secara manual
+            gallery.style.transform = `perspective(1000px) rotateY(${currentRotation}deg)`;
+        }
+
+        // --- Event Listeners untuk Sentuhan ---
+
+        gallery.addEventListener('touchstart', (e) => {
+            pauseAnimation(); // Hentikan animasi CSS
+            startX = e.touches[0].clientX;
+            velocity = 0; // Reset kecepatan inersia
+            if (animationInterval) clearInterval(animationInterval);
+        }, false);
+
+        gallery.addEventListener('touchmove', (e) => {
+            if (startX === undefined) return;
+            const currentX = e.touches[0].clientX;
+            const deltaX = currentX - startX;
+            
+            // Hitung perubahan rotasi
+            // DeltaX dibagi dengan sensitivitas untuk mengontrol seberapa cepat berputar
+            const rotationDelta = deltaX * sensitivity; 
+            currentRotation += rotationDelta;
+
+            // Hitung kecepatan untuk inersia nanti
+            velocity = rotationDelta * 0.5;
+
+            updateRotation();
+            startX = currentX; // Perbarui posisi awal untuk frame berikutnya
+        }, false);
+
+        gallery.addEventListener('touchend', () => {
+            startX = undefined;
+            // Mulai animasi inersia setelah jari diangkat
+            startInertia();
+        }, false);
+
+        // Juga tambahkan event mouse untuk interaksi desktop yang sama
+        gallery.addEventListener('mousedown', (e) => {
+            pauseAnimation();
+            startX = e.clientX;
+            velocity = 0;
+            if (animationInterval) clearInterval(animationInterval);
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (startX === undefined) return;
+            const currentX = e.clientX;
+            const deltaX = currentX - startX;
+            const rotationDelta = deltaX * sensitivity;
+            currentRotation += rotationDelta;
+            velocity = rotationDelta * 0.5;
+            updateRotation();
+            startX = currentX;
+        });
+
+        document.addEventListener('mouseup', () => {
+            startX = undefined;
+            startInertia();
+        });
+
+    </script>
+</body>
+</html>
